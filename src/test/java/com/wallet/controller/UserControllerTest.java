@@ -18,11 +18,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 public class UserControllerTest {
 
+    private static final Long ID = 1L;
     private static final String EMAIL = "email@teste.com";
     private static final String NAME = "User Test";
     private static final String PASSWORD = "123456";
@@ -39,9 +41,13 @@ public class UserControllerTest {
     public void testSave() {
         BDDMockito.given(service.save(Mockito.any(User.class))).willReturn(getMockUser());
         try {
-            mvc.perform(MockMvcRequestBuilders.post(URL).content(getJsonPayload())
+            mvc.perform(MockMvcRequestBuilders.post(URL).content(getJsonPayload(ID, EMAIL, NAME, PASSWORD))
                     .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isCreated());
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.data.id").value(ID))
+                    .andExpect(jsonPath("$.data.email").value(EMAIL))
+                    .andExpect(jsonPath("$.data.name").value(NAME))
+                    .andExpect(jsonPath("$.data.password").doesNotExist());
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -49,8 +55,23 @@ public class UserControllerTest {
 
     }
 
+    @Test
+    public void testSaveInvalidUser(){
+        //BDDMockito.given(service.save(Mockito.any(User.class))).willReturn(getMockUser());
+        try {
+            mvc.perform(MockMvcRequestBuilders.post(URL).content(getJsonPayload(ID, "email", NAME, PASSWORD))
+                    .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors[0]").value("Email inválido"));
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
     public User getMockUser() {
         User user = new User();
+        user.setId(ID);
         user.setEmail(EMAIL);
         user.setName(NAME);
         user.setPassword(PASSWORD);
@@ -58,11 +79,12 @@ public class UserControllerTest {
         return user;
     }
 
-    public String getJsonPayload() throws JsonProcessingException {
+    public String getJsonPayload(Long id, String email, String name, String password) throws JsonProcessingException {
         UserDTO dto = new UserDTO();
-        dto.setEmail(EMAIL);
-        dto.setName(NAME);
-        dto.setPassword(PASSWORD);
+        dto.setId(id);
+        dto.setEmail(email);
+        dto.setName(name);
+        dto.setPassword(password);
 
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(dto);
