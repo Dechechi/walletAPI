@@ -8,6 +8,7 @@ import com.wallet.enums.TypeEnum;
 import com.wallet.response.Response;
 import com.wallet.service.UserWalletService;
 import com.wallet.service.WalletItemService;
+import com.wallet.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,10 +32,12 @@ import java.util.Optional;
 public class WalletItemController {
 
     private final WalletItemService service;
+    private final UserWalletService userWalletService;
 
     @Autowired
-    public WalletItemController(WalletItemService service) {
+    public WalletItemController(WalletItemService service, UserWalletService userWalletService) {
         this.service = service;
+        this.userWalletService = userWalletService;
     }
 
     private static final Logger log = LoggerFactory.getLogger(WalletItemController.class);
@@ -63,6 +66,14 @@ public class WalletItemController {
                                                                           @RequestParam(name = "page", defaultValue = "0") int page) {
 
         Response<Page<WalletItemDTO>> response = new Response<>();
+
+        Optional<UserWallet> uw = userWalletService.findByUsersIdAndWalletId(Util.getAuthenticatedUserId(), wallet);
+
+        if(!uw.isPresent()){
+            response.getErrors().add("Voçê não tem acesso a essa carteira");
+            return ResponseEntity.badRequest().body(response);
+        }
+
         Page<WalletItem> items = service.findBetweenDates(wallet, startDate, endDate, page);
         Page<WalletItemDTO> dto = items.map(i -> this.convertEntityToDto(i));
         response.setData(dto);
