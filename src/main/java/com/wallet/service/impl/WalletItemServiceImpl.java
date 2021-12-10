@@ -6,9 +6,11 @@ import com.wallet.repository.WalletItemRepository;
 import com.wallet.service.WalletItemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import springfox.documentation.annotations.Cacheable;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -29,6 +31,7 @@ public class WalletItemServiceImpl implements WalletItemService {
     }
 
     @Override
+    @CacheEvict(value = "findByWalletandType", allEntries = true)
     public WalletItem save(WalletItem walletItem) {
         return repository.save(walletItem);
     }
@@ -41,6 +44,7 @@ public class WalletItemServiceImpl implements WalletItemService {
     }
 
     @Override
+    @Cacheable(value = "findByWalletAndType")
     public List<WalletItem> findByWalletAndType(Long wallet, TypeEnum typeEnum) {
         return repository.findByWalletIdAndType(wallet, typeEnum);
     }
@@ -56,6 +60,7 @@ public class WalletItemServiceImpl implements WalletItemService {
     }
 
     @Override
+    @CacheEvict(value = "findByWalletandType", allEntries = true)
     public void deleteById(Long id) {
         repository.deleteById(id);
     }
